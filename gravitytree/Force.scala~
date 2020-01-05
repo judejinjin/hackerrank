@@ -1,0 +1,304 @@
+object Solution {
+    import scala.collection.mutable._
+    import scala.util.control.Breaks._
+
+    val DistanceHM = new HashMap[(Int, Int),Int]()
+    val sAndT = new HashSet[Int]()
+	
+    case class Node(id:Int, var children:ArrayBuffer[Node], pId: Int = 0, var d:Int = 0, var level:Int = 0)
+    case class DerivedPath(val path:ArrayBuffer[Int], val start:Int=0)
+    val derivedPathHM = new HashMap[Int, DerivedPath]()
+
+    val forceHM = new HashMap[(Int, Int), Long]()
+    
+    def distance(s:Node, d:Node, nodes:Array[Node]):Int={
+//        println("calculating distance between " + s.id + " and " + d.id)
+	
+        if(DistanceHM.contains((s.id, d.id))){
+            return DistanceHM.get((s.id, d.id)).get
+        } 
+        
+        if(DistanceHM.contains((d.id, s.id))){
+            return DistanceHM.get((d.id, s.id)).get
+        }
+
+        //println("calculating pathtoroot")
+	
+	var spathToRoot:Array[Int] = null
+	var dpathToRoot:Array[Int] = null
+	if(derivedPathHM.contains(s.id)){
+            val derivedPath = derivedPathHM.get(s.id).get
+	    spathToRoot = derivedPath.path.slice(derivedPath.start, derivedPath.path.length).toArray[Int]
+	}else{
+		val path = new ArrayBuffer[Int]()
+		calculatePathToRoot(s, nodes, path)
+		spathToRoot = path.toArray[Int]
+	 }
+	if(derivedPathHM.contains(d.id)){
+            val derivedPath = derivedPathHM.get(d.id).get
+	    dpathToRoot = derivedPath.path.slice(derivedPath.start, derivedPath.path.length).toArray[Int]
+	}else{
+		val path = new ArrayBuffer[Int]()
+		calculatePathToRoot(d, nodes, path)
+		dpathToRoot = path.toArray[Int]
+	 }
+
+
+
+
+        //println("finished calculating pathtoroot")
+//	println(spathToRoot.toList)
+//        println(dpathToRoot.toList)
+
+          var lastI = 0
+          var lastJ = 0
+          breakable{
+	  var foundCounter = 0
+          for(i<- spathToRoot.length-1 to 0 by -1){
+              var found = false
+              breakable{
+              for(j<- dpathToRoot.length-1-foundCounter to 0 by -1){
+                 if(spathToRoot(i)==dpathToRoot(j)){
+                    found = true
+                    lastI = i
+                    lastJ = j 
+                    break
+                 }
+              }
+              }
+              if(!found){
+                  break;
+              }else{
+		foundCounter += 1
+	      }
+          }
+          }
+
+	  val v = lastI+lastJ
+          DistanceHM += ((s.id, d.id) -> v)
+          DistanceHM += ((d.id, s.id) -> v)
+//          println("fininshed calculating distance between " + s.id + " and " + d.id + "----" + v)	  
+          return v
+    }
+
+		   
+    def getAllNodes2(nodes:HashSet[Int], q:Queue[Node], tNode:Node, sNode:Node, allNodes:Array[Node], results:Array[Long]){
+        if(q.isEmpty)
+    	    return
+
+	val n = q.dequeue
+
+	results(0) += n.d*n.d
+	for(i<-n.children){
+            if(i.id != tNode.id && !nodes.contains(i.id)){
+	    	    i.d = n.d+1
+		    nodes += i.id
+		    q += i
+	    }
+        }
+
+	//parent
+	if(n.pId != 0 && n.id != sNode.id && !nodes.contains(n.pId)){
+		allNodes(n.pId-1).d = n.d+1
+		nodes += allNodes(n.pId-1).id
+		q += allNodes(n.pId-1)
+	}
+        getAllNodes2(nodes, q, tNode, sNode, allNodes, results)         
+    }
+    
+    def getAllNodes(q:Queue[Node], results:Array[Long], t:Node){
+        if(q.isEmpty)
+    	    return
+	    
+	val n = q.dequeue
+	if(!forceHM.contains((t.id, n.id))){
+		results(0) += n.d * n.d
+		//	println(n.id + " " + n.d + ":" + n.d*n.d)
+	        for(i<-n.children){
+		    i.d = n.d + 1 
+		    q += i
+	        }
+
+	}else{
+		results(0) += forceHM.get((t.id, n.id)).get
+	}
+
+        getAllNodes(q, results, t)
+
+    }
+
+    def setLevel(q:Queue[Node]){
+        if(q.isEmpty)
+    	    return
+
+	val n = q.dequeue
+
+	for(i<-n.children){
+	    i.level = n.level + 1 
+	    q += i
+        }
+
+        setLevel(q)
+
+    }
+    
+    def calculate(t:Node, s:Node, nodes:Array[Node]):Long = {
+        var accum:Long = 0
+        var d = distance(s, t, nodes)
+        //println(s.id + ":" + t.id + "--" + d)
+        accum += d*d 
+        for(i<- s.children){
+            accum += calculate(t, i, nodes)
+        }
+        return accum
+    }
+
+    
+    def calculatePathToRoot(n:Node, nodes:Array[Node], path:ArrayBuffer[Int]){
+      //println(n.id)
+      path.append(n.id)
+      if(sAndT.contains(n.id) && !derivedPathHM.contains(n.id)){
+	    val p = DerivedPath(path, path.length-1)
+	    derivedPathHM += (n.id -> p)
+      }
+      if(n.id!=1 && n.pId != 0)
+        return calculatePathToRoot(nodes(n.pId-1), nodes, path)
+    }
+    
+
+    def checkTargetUnderSource(t:Node, s:Node, nodes:Array[Node]) : Boolean = {
+        var tpathToRoot:Array[Int] = null
+	if(derivedPathHM.contains(t.id)){
+            val derivedPath = derivedPathHM.get(t.id).get
+	    tpathToRoot = derivedPath.path.slice(derivedPath.start, derivedPath.path.length).toArray[Int]
+	}else{
+            val path = new ArrayBuffer[Int]()
+            calculatePathToRoot(t, nodes, path)
+            tpathToRoot = path.toArray[Int]
+	}
+
+	if(s.level == 0)
+           return true
+
+	if(t.level <= s.level)
+	   return false
+
+	if(tpathToRoot(s.level) != s.id)
+	   return false
+	else
+           return true
+/*	for(i<- 0 to tpathToRoot.length-s.level){
+           if(i==s.id)
+	      return true
+	}
+	return false
+	*/
+    }
+
+    def main(args: Array[String]) {
+        /* Enter your code here. Read input from STDIN. Print output to STDOUT. Your class should be named Solution
+*/
+        val lines = io.Source.stdin.getLines.toArray
+        val N = lines(0).toInt
+        val input = lines(1).split(" ").map(_.toInt).toArray
+        val nodes = new Array[Node](N)
+
+        //var path = new ArrayBuffer[Int]()
+	//path += 1
+        nodes(0) = new Node(1, new ArrayBuffer[Node](), 0)
+        //nodes(0).pathToRoot = path.toArray[Int]
+	
+        for(i<- 0 to input.length-1){
+            nodes(i+1) = new Node(i+2, new ArrayBuffer[Node](), input(i))
+            nodes(input(i)-1).children += nodes(i+1)
+        }
+	val q:Queue[Node] = new Queue[Node]()
+	nodes(0).level = 0
+	q += nodes(0)
+	setLevel(q)
+	
+        val T = lines(2).toInt
+
+	for(i<- 1 to T){
+            val params = lines(2+i).split(" ").map(_.toInt)
+	    sAndT += params(1)
+	    sAndT += params(0)
+	}
+
+	for(i<- 1 to T){
+            val params = lines(2+i).split(" ").map(_.toInt)
+                
+//	    println(calculate(nodes(params(0)-1), nodes(params(1)-1), nodes))
+
+
+	    if(checkTargetUnderSource(nodes(params(0)-1), nodes(params(1)-1), nodes)){
+	        //brute force
+	        //println(calculate(nodes(params(0)-1), nodes(params(1)-1), nodes))
+
+		//better 
+		//break into two trees here
+		var total:Long = 0
+		//1st tree everything beyond target node but under source node
+		   if(params(0)!= params(1)){
+
+		   val allNodes = new HashSet[Int]()
+		   val tNode = nodes(params(0)-1)
+                   val pNode = nodes(nodes(params(0)-1).pId-1)
+		   
+		   val sNode = nodes(params(1)-1)
+		   pNode.d = 1
+		   allNodes += pNode.id
+
+		   val q = new Queue[Node]()
+		   q += pNode
+
+		   var results = new Array[Long](1)
+		   results(0) = 0
+
+		   getAllNodes2(allNodes, q, tNode, sNode, nodes, results)
+
+
+		   total += results(0)
+		   
+
+		   }
+		   
+		   //2nd tree everything under target node
+		   var results = new Array[Long](1)
+		   results(0) = 0
+		   
+		   nodes(params(0)-1).d = 0
+		   val q2 = new Queue[Node]()
+		   q2 += nodes(params(0)-1)
+
+		   getAllNodes(q2, results,nodes(params(0)-1))
+
+		   if(!forceHM.contains((params(0), params(0)))){
+                       forceHM += ((params(0), params(0))->results(0))
+		   }
+		   
+                   total += results(0)
+		   println(total)		   
+
+          }else{
+//		println("target outside of source subtree")
+
+		   val d = distance(nodes(params(0)-1), nodes(params(1)-1), nodes)
+		   nodes(params(1)-1).d = d
+
+		   val q = new Queue[Node]()
+		   q += nodes(params(1)-1)
+		   
+		   var results = new Array[Long](1)
+		   results(0) = 0
+
+		   getAllNodes(q, results, nodes(params(0)-1))
+		   if(!forceHM.contains((params(0), params(1)))){
+                       forceHM += ((params(0), params(1))->results(0))
+		   }
+		   println(results(0))
+	    }
+
+        }
+    }
+}

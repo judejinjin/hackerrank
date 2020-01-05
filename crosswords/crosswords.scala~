@@ -1,0 +1,127 @@
+object Solution {
+    def fillH(g:Array[String], y:Int, x:Int, w:String): Array[String] = {
+        var results = new Array[String](g.length)
+        for(i<- 0 to g.length-1)
+            results(i) = g(i)
+            
+        for(i <- 0 to w.length-1){
+            val len = results(y).length;
+         
+            if( x + w.length < results(y).length){
+                results(y) = results(y).subString(0, x) + w + results(y).subString(x+w.length, results(y).length);
+            }else{
+                results(y) = results(y).subString(0, x) + w;
+            }
+        }
+        return results;    
+    }
+    
+    def fillH(g:Array[String], y:Int, x:Int, w:String): Array[String] = {
+        var results = new Array[String](g.length)
+        for(i<- 0 to g.length-1)
+            results(i) = g(i)
+        
+        for(i <- 0 to w.length-1){
+            if(x + 1 < results(y+i).length){
+                results(y+i) = results(y+i).subString(0, x) + w.subString(i,i+1) + results(y+i).subString(x+1, results(y+i).length)
+            }else{
+                results(y+i) = results(y+i).subString(0, x) + w.subString(i,i+1);
+            }
+        }
+        
+        return results;
+    }
+    
+    def fitH(g: Array[String], y:Int, x:Int, w: String): Boolean = {
+        Boolean fit = true
+            
+        if(w.length+x < g(y).length){
+            var counter = 0;
+            for(i <- x to g(y).length-1 ){
+                if(g(y).charAt(i) == '-')
+                    counter++;
+                else{
+                    if(counter < w.length)
+                        fit = false;
+                }
+            }
+        }
+        return fit;
+    }
+    
+    def fitV(g:Array[String], y:Int, x:Int, w: String): Boolean = {
+        Boolean fit = true
+            
+        if(w.length+y < g.length){
+            var counter = 0;
+            for(i <- y to g.length-1 ){
+                if(g(i).charAt(x) == '-')
+                    counter++;
+                else{
+                    if(counter < w.length)
+                        fit = false;
+                }
+            }
+        }
+        return fit;
+    }
+    
+    def fitOnGrids(grids: List[Array[String]], w: String): List[Array[String]] = {
+        var results = List[Array[String]]()
+        
+        for(g <- grids){
+            for(i <- 0 to g.length-1){
+                for(j <- 0 to g(i).length-1){
+                    if(fitH(g, i, j, w)){
+                        results = results ++ (fillH(g, i, j, w))
+                    }  
+                    if(fitV(g, i, j, w)){
+                        results = results ++ (fillV(g, i, j, w))
+                    }
+                }
+            }
+            
+        }
+        
+        return results
+    }
+    
+    def findFit(grid: Array[String], words: List[String]) : Array[String]={
+        var grids = List[Array[String]](grid)
+            
+        for(i <- words){
+            grids = fitOnGrids(grids, i)
+        }
+        
+        for(g <- grids){
+            var good = true
+            for(row <- g){
+                if(row.indexOf('-') >=0){
+                    good = false
+                }
+            }
+            if(good)
+                return g
+        }
+        println("not solution")
+        return grid
+    }
+    
+    def main(args: Array[String]) {
+        /* Enter your code here. Read input from STDIN. Print output to STDOUT. Your class should be named Solution
+*/
+        val lines = io.Source.stdin.getLines.toList
+        val grid = lines.take(10).toArray[String]
+        val words = lines.takeRight(1)(0).split(";").toList
+            
+        /*for(i <- grid)
+            println(i)
+        println(words)
+        */
+        val solution = findFit(grid, words)
+        for(row <- solution)
+            println(row)
+            
+    
+    }
+}

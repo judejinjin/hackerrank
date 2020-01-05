@@ -1,0 +1,83 @@
+object Solution {
+    import scala.math._
+    val ERROR: Double = pow(10, -15)
+        
+    def findR(sides:Array[Int]) : Double = {
+        var maxSide = sides.max        
+        var r:Double = maxSide / 2.0 * 1.1
+        var e : Double = 0
+        var lastR:Double = r
+        do{
+            var sum : Double = 0
+            for(i <- sides){
+                sum += 2 * asin(i/(2.0*r))
+            }
+            e = abs(2*Pi - sum)
+            
+            if(sum>2*Pi){
+                if(lastR==r){
+                    lastR = r
+                    r = r * 2
+                }else{
+                    val oldR = r
+                    r = r + abs(lastR - r) / 2
+                    lastR = oldR
+                }
+            }else{
+                if(lastR==r){
+                    lastR = r
+                    r = r - abs(maxSide/2-r) / 2
+                }else{
+                    val oldR = r
+                    r = r - abs(lastR - r) / 2
+                    lastR = oldR
+                }
+            }
+            System.err.println("total:" + sum + " error:" + e + " lastR:" + lastR + " new R:" + r)
+        }while(e > ERROR && abs(r-maxSide/2)> pow(10, -8) )
+
+        return r
+    }
+    
+    def main(args: Array[String]) {
+        /* Enter your code here. Read input from STDIN. Print output to STDOUT. Your class should be named Solution
+*/
+        val lines = io.Source.stdin.getLines
+        val N = lines.next.toInt
+        val sides = lines.next.split(" ").map(_.toInt).toArray[Int]
+            
+        val R = findR(sides)
+        
+        
+        val y = sides(0)/2.0
+        val x = sqrt(R*R - y*y)
+        
+        //println("Radius:" + R + " x:" + x + " y:" + y)    
+       
+        val format = "%1.13f"
+        println(format.format(0.0))
+        println(format.format(0.0))
+        println("")
+        println(format.format(0.0))
+        println(format.format(sides(0).toDouble))
+        println("")
+        
+        var lastX:Double = 0.0
+        var lastY:Double = sides(0).toDouble
+        var angleAccum = asin(sides(0)/2.0/R)
+        for(i <- 1 to sides.length-2){
+            var angle = 2 * asin(sides(i)/2.0/R)
+	    if(java.lang.Double.isNaN(angle)){
+	        System.err.println(i + " side : " + sides(i) + " -- :" + angleAccum + " R: " + R + " " + sides(i)/2.0/R + " " + asin(sides(i)/2.0/R))
+	    }
+            angleAccum += angle
+            val cosSide = cos(angleAccum)*R
+            val sinSide = sin(angleAccum)*R
+                
+                
+            println(format.format(x - cosSide))
+            println(format.format(y + sinSide))
+            println("")
+        }
+    }
+}

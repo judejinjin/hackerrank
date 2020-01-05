@@ -1,0 +1,140 @@
+object Solution {
+    import scala.collection.mutable._
+
+    val modulo:Long = (Math.pow(10, 9) + 7).toLong
+
+    def gcd(a: BigInt,b: BigInt): BigInt = {
+        var aVar = a
+        var bVar = b
+        while( bVar!=0 ){
+          aVar = aVar % bVar;
+          if( aVar==0 ) return bVar;
+          bVar = bVar % aVar;
+       }
+       return aVar;
+    }
+
+    def findSmallestCommonDenominator(A :Iterator[BigInt]): BigInt = {
+        var scd:BigInt = A.next
+        while(A.hasNext){
+            val next = A.next
+            val g = gcd(scd, next)
+            scd = scd  * next /g
+        }
+        return scd
+    }
+
+    def main(args: Array[String]) {
+        /* Enter your code here. Read input from STDIN. Print output to STDOUT. Your class should be named Solution
+*/
+        val lines = io.Source.stdin.getLines
+        val N = lines.next().split(" ")(0).toInt
+        val tokens:List[BigInt] = lines.next().split(" ").toList.map(_.toInt).map(BigInt(_))
+        var A = tokens.toArray[BigInt]
+
+        //      var multipliers = HashMap[Int, ListBuffer[BigInt]]()
+        var results = HashMap[String, BigInt]()
+        var i = 1
+
+        /*while(i <= N){
+            A(i-1) = tokens(i-1).toInt
+            i += 1
+        }*/
+
+        //println(A.toList)
+        val K = lines.next().split(" ")(0).toInt
+        i = 1
+        while( i <= K ){
+            val query = lines.next().split(" ")
+            if(query(0).equals("Q")){
+                val l = query(1).toInt
+                val r = query(2).toInt
+                //println(A.toList)
+                //println("Q " + l + " " + r + A.toList.slice(l, r+1))
+                //println("#:" + A.toList.slice(l, r+1).distinct.length)
+                var numbers = HashSet[BigInt]()
+                var bigNumbers = HashSet[BigInt]()
+                //println("Q " + l + " " + r )
+                for(j<- l to r){
+                    if(A(j)<=100)
+                       numbers += A(j)
+                    else
+                        bigNumbers += A(j)
+                    /*
+                    val values = multipliers.get(j)
+                    var value:BigInt = 1
+                    if(values != None){
+                        for(k<- values.get)
+                            value = value* k
+                        numbers += value * A(j)
+                    }else{
+                        numbers += A(j)
+                    }
+                    */
+                }
+                //println("big numbers:" + bigNumbers.size)
+
+                val uniques = numbers.toList.sorted
+                var result: BigInt = 0
+                if(uniques.length > 0){
+                val key = uniques.mkString(",")
+                var resultOption = results.get(key)
+
+                if(resultOption != None){
+                    //println(key + ":" + result.get)
+                    result = resultOption.get
+                }else{
+                    //println(key + ":" + uniques)
+                    result  = findSmallestCommonDenominator(uniques.iterator)
+                    /*if(result > modulo)
+                        println(result%modulo)
+                    else
+                        println(result)
+                    */
+                    results += (key -> result)
+                }
+
+                bigNumbers += result
+                }
+
+                result  = findSmallestCommonDenominator(bigNumbers.iterator)
+                    if(result > modulo)
+                        println(result%modulo)
+                    else
+                        println(result)
+                /*
+                val key = uniques.mkString(",")
+                val result = results.get(key)
+                if(result != None){
+                    //println(key + ":" + result.get)
+                    println(result.get)
+                }else{
+                    //println(key + ":" + uniques)
+                    val result  = findSmallestCommonDenominator(uniques.iterator)
+                    if(result > modulo)
+                        println(result%modulo)
+                    else
+                        println(result)
+                    results += (key -> (result%modulo).toInt)
+                }
+                */
+            }else{
+                val idx = query(1).toInt
+                val value = BigInt(query(2).toInt)
+                //println("U " + idx +" " + value)
+                A(idx) = A(idx) * value
+                /*
+                var values = multipliers.get(idx)
+                if(values != None){
+                    values.get +=  value
+                }else{
+                    var v = ListBuffer[BigInt]()
+                    v += value
+                    multipliers += (idx -> v)
+                }
+                */
+            }
+            i += 1
+        }
+    }
+}
